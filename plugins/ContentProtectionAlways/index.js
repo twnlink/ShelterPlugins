@@ -4,7 +4,9 @@ const { StreamerModeStore } = shelter.flux.stores;
 let contentProtectionEnabled = StreamerModeStore.enableContentProtection;
 Object.defineProperty(StreamerModeStore, "enableContentProtection", {
   get: () => true,
-  set: (val) => { contentProtectionEnabled = val; return true }
+  set: (val) => { contentProtectionEnabled = val; return true },
+  writable: true,
+  configurable: true
 })
 
 // Force it on
