@@ -5,7 +5,6 @@ let contentProtectionEnabled = StreamerModeStore.enableContentProtection;
 Object.defineProperty(StreamerModeStore, "enableContentProtection", {
   get: () => true,
   set: (val) => { contentProtectionEnabled = val; return true },
-  writable: true,
   configurable: true
 })
 
