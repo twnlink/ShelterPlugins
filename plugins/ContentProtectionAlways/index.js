@@ -15,6 +15,7 @@ export function onUnload() {
   setContentProtection(contentProtectionEnabled);
   
   Object.defineProperty(StreamerModeStore, "enableContentProtection", {
-    value: contentProtectionEnabled
+    value: contentProtectionEnabled,
+    configurable: true
   })
 }
