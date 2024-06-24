@@ -1,0 +1,26 @@
+.settingsBox {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.button {
+  width: 100%;
+}
+
+.selectRow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.selectLabel {
+  flex-grow: 0;
+  flex-shrink: 0;
+  margin-right: 0.5rem;
+}
+
+.select {
+  flex-grow: 1;
+  flex-shrink: 0;
+}

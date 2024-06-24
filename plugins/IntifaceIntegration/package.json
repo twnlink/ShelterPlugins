@@ -1,5 +1,10 @@
 {
   "dependencies": {
-    "buttplug": "^3.2.2"
+    "buttplug": "^3.2.2",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.5",
+    "prettier": "^3.3.2"
   }
 }
