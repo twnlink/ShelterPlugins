@@ -1,1 +1,49 @@
-(()=>{var c=Object.defineProperty;var a=Object.getOwnPropertyDescriptor;var b=Object.getOwnPropertyNames;var s=Object.prototype.hasOwnProperty;var P=(e,t)=>{for(var o in t)c(e,o,{get:t[o],enumerable:!0})},d=(e,t,o,u)=>{if(t&&typeof t=="object"||typeof t=="function")for(let n of b(t))!s.call(e,n)&&n!==o&&c(e,n,{get:()=>t[n],enumerable:!(u=a(t,n))||u.enumerable});return e};var f=e=>d(c({},"__esModule",{value:!0}),e);var g={};P(g,{onUnload:()=>C});var{setContentProtection:l}=DiscordNative.window,{StreamerModeStore:r}=shelter.flux.stores,i=r.enableContentProtection;Object.defineProperty(r,"enableContentProtection",{get:()=>!0,set:e=>(i=e,!0),configurable:!0});l(!0);function C(){l(i),Object.defineProperty(r,"enableContentProtection",{value:i,set:e=>(r.enableContentProtection=e,!0),configurable:!0})}return f(g);})();
+(() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+  // plugins/ContentProtectionAlways/index.js
+  var ContentProtectionAlways_exports = {};
+  __export(ContentProtectionAlways_exports, {
+    onUnload: () => onUnload
+  });
+  var { setContentProtection } = DiscordNative.window;
+  var { StreamerModeStore } = shelter.flux.stores;
+  var contentProtectionEnabled = StreamerModeStore.enableContentProtection;
+  Object.defineProperty(StreamerModeStore, "enableContentProtection", {
+    get: () => true,
+    set: (val) => {
+      contentProtectionEnabled = val;
+      return true;
+    },
+    configurable: true
+  });
+  setContentProtection(true);
+  function onUnload() {
+    setContentProtection(contentProtectionEnabled);
+    Object.defineProperty(StreamerModeStore, "enableContentProtection", {
+      value: contentProtectionEnabled,
+      set: (val) => {
+        StreamerModeStore.enableContentProtection = val;
+        return true;
+      },
+      configurable: true
+    });
+  }
+  return __toCommonJS(ContentProtectionAlways_exports);
+})();
