@@ -156,7 +156,14 @@ export const settings = () => {
           >
             <option value="none of the above">Off</option>
             <For each={devices()}>
-              {(d) => <option value={d.index.toString()}>{d.name}</option>}
+              {(d) => (
+                <option
+                  value={d.index.toString()}
+                  selected={selectedDevice()?.index === d.index}
+                >
+                  {d.name}
+                </option>
+              )}
             </For>
           </select>
         </div>
@@ -171,27 +178,38 @@ export const settings = () => {
                 name="Mode"
                 id="mode"
                 onChange={(e) => {
-                  if (
-                    (Object.values(VibrationMode) as string[]).includes(
-                      e.target.value,
-                    )
-                  ) {
-                    store.mode = e.target.value as VibrationMode;
-                  } else {
-                    store.mode = null;
-                  }
+                  store.mode = (
+                    Object.values(VibrationMode) as string[]
+                  ).includes(e.target.value)
+                    ? (e.target.value as VibrationMode)
+                    : null;
                 }}
                 class={styles["selectLabel"]}
               >
                 <option value="none of the above">Off</option>
                 {selectedDevice().vibrateAttributes.length > 0 && (
-                  <option value={VibrationMode.Vibrate}>Vibrate</option>
+                  <option
+                    value={VibrationMode.Vibrate}
+                    selected={store.mode === VibrationMode.Vibrate}
+                  >
+                    Vibrate
+                  </option>
                 )}
                 {selectedDevice().oscillateAttributes.length > 0 && (
-                  <option value={VibrationMode.Oscillate}>Oscillate</option>
+                  <option
+                    value={VibrationMode.Oscillate}
+                    selected={store.mode === VibrationMode.Oscillate}
+                  >
+                    Oscillate
+                  </option>
                 )}
                 {selectedDevice().linear.length > 0 && (
-                  <option value={VibrationMode.Linear}>Linear</option>
+                  <option
+                    value={VibrationMode.Linear}
+                    selected={store.mode === VibrationMode.Linear}
+                  >
+                    Linear
+                  </option>
                 )}
               </select>
             </div>
