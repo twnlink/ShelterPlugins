@@ -13,6 +13,8 @@ import {
   setSelectedDevice,
 } from "./signals";
 import SoundboardPayload from "./SoundboardPayload";
+import Handler from "./Handler";
+import easedImpulseHandler from "./easedImpulseHandler";
 
 const {
   solid: { createSignal, For },
@@ -43,15 +45,16 @@ let uninterceptRoot = intercept(({ type, soundId }: SoundboardPayload) => {
     state.lastSoundId = soundId;
   }
 });
-let uninterceptVibrationHandler: ReturnType<typeof intercept> | null = null;
+let handler: Handler | null = null;
 
 if (store.vibrationMode === "binary") {
-  uninterceptVibrationHandler = intercept(binaryImpulseHandler);
+  handler = binaryImpulseHandler;
+  handler.init();
 }
 
 export const onUnload = () => {
   uninterceptRoot();
-  uninterceptVibrationHandler != null && uninterceptVibrationHandler();
+  handler != null && handler.deinit();
 
   client.removeListener("deviceadded", updateDevices);
   client.removeListener("deviceremoved", updateDevices);
@@ -180,6 +183,18 @@ export const settings = () => {
                   ).includes(e.target.value)
                     ? (e.target.value as VibrationMode)
                     : null;
+
+                  handler != null && handler.deinit();
+                  switch (store.vibrationMode) {
+                    case "binary":
+                      handler = binaryImpulseHandler;
+                      handler.init();
+                      break;
+                    case "eased":
+                      handler = easedImpulseHandler;
+                      handler.init();
+                      break;
+                  }
                 }}
                 class={styles["select"]}
               >

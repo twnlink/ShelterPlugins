@@ -1,5 +1,5 @@
 import type SoundboardPayload from "./SoundboardPayload";
-import store, { state, VibrationOutput } from "./store";
+import store, { VibrationOutput } from "./store";
 import { selectedDevice } from "./signals";
 
 const {
@@ -17,6 +17,8 @@ type ActiveSound = {
   activeCount: number;
 };
 const activeSfx: PRecord<string, ActiveSound> = {};
+
+let unintercept: ReturnType<typeof intercept> | null = null;
 
 const binaryImpulseHandler: Parameters<typeof intercept>[0] = ({
   type,
@@ -77,4 +79,16 @@ const binaryImpulseHandler: Parameters<typeof intercept>[0] = ({
   }
 };
 
-export default binaryImpulseHandler;
+const init = () => {
+  unintercept = intercept(binaryImpulseHandler);
+};
+
+const deinit = () => {
+  unintercept != null && unintercept();
+  unintercept = null;
+};
+
+export default {
+  init,
+  deinit,
+};

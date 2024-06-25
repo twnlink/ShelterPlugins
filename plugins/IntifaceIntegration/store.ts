@@ -12,7 +12,7 @@ export type VibrationOutput =
 
 export const VibrationMode = {
   Binary: "binary",
-  // Eased: "eased",
+  Eased: "eased",
 } as const;
 export type VibrationMode = (typeof VibrationMode)[keyof typeof VibrationMode];
 
@@ -21,13 +21,15 @@ type PluginStore = {
   soundId: string;
   intensity: number;
   outputMode: VibrationOutput;
-} & {
-  vibrationMode: typeof VibrationMode.Binary;
-  intensity: number;
-};
-/* | {
+} & (
+  | {
+      vibrationMode: typeof VibrationMode.Binary;
+      intensity: number;
+    }
+  | {
       vibrationMode: typeof VibrationMode.Eased;
-    }*/
+    }
+);
 type PluginState = {
   lastSoundId: string | null;
 };
