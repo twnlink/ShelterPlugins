@@ -80,19 +80,25 @@ export const settings = () => {
       <div class={styles["settingsBox"]}>
         <TextBox value={store.serverURL} onInput={debouncedNewConnector} />
 
-        <Button
-          size={ButtonSizes.LARGE}
-          onClick={() => {
-            setRecentlyPressed(true);
-            setTimeout(() => setRecentlyPressed(false), 2500);
-            store.soundId = state.lastSoundId;
-          }}
-          color={recentlyPressed() ? ButtonColors.GREEN : ButtonColors.BRAND}
-          disabled={recentlyPressed()}
-          class={styles["button"]}
-        >
-          {recentlyPressed() ? "✓" : "Select most recent played sound"}
-        </Button>
+        <div>
+          <p>
+            Select the most recently played sound. Anyone with access to the
+            specific sound will be able to trigger it.
+          </p>
+          <Button
+            size={ButtonSizes.LARGE}
+            onClick={() => {
+              setRecentlyPressed(true);
+              setTimeout(() => setRecentlyPressed(false), 2500);
+              store.soundId = state.lastSoundId;
+            }}
+            color={recentlyPressed() ? ButtonColors.GREEN : ButtonColors.BRAND}
+            disabled={recentlyPressed()}
+            class={styles["button"]}
+          >
+            {recentlyPressed() ? "✓" : "Select soundclip"}
+          </Button>
+        </div>
 
         <div class={styles["selectRow"]}>
           <label for="device" class={styles["selectLabel"]}>
