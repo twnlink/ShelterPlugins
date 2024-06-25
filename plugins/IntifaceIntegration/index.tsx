@@ -98,6 +98,7 @@ export const settings = () => {
           <label for="device" class={styles["selectLabel"]}>
             Buttplug device
           </label>
+          <div class={styles["selectGap"]} />
           <select
             name="Device"
             id="device"
@@ -130,6 +131,7 @@ export const settings = () => {
               <label for="output" class={styles["selectLabel"]}>
                 Output
               </label>
+              <div class={styles["selectGap"]} />
               <select
                 name="Output"
                 id="output"
@@ -174,6 +176,7 @@ export const settings = () => {
               <label for="mode" class={styles["selectLabel"]}>
                 Mode
               </label>
+              <div class={styles["selectGap"]} />
               <select
                 name="Mode"
                 id="mode"
@@ -213,16 +216,13 @@ export const settings = () => {
             </div>
 
             {store.vibrationMode === VibrationMode.Binary && (
-              <div class={styles["selectRow"]}>
-                <label for="mode" class={styles["selectLabel"]}>
-                  Intensity
-                </label>
+              <div>
+                <label for="mode">Intensity</label>
                 <Slider
                   value={store.intensity}
                   onInput={(e) => (store.intensity = +e)}
                   min={0.0}
                   max={1.0}
-                  class={styles["select"]}
                 />
               </div>
             )}
