@@ -9691,58 +9691,40 @@
     "select": "_select_1jnoy_1"
   };
 
-  // plugins/IntifaceIntegration/index.tsx
-  var _tmpl$ = /* @__PURE__ */ (0, import_web.template)(`<div><div><label for="device">Buttplug device</label><select name="Device" id="device"><option value="none of the above">Off</option></select></div></div>`, 10);
-  var _tmpl$2 = /* @__PURE__ */ (0, import_web.template)(`<option></option>`, 2);
-  var _tmpl$3 = /* @__PURE__ */ (0, import_web.template)(`<div><label for="mode">Mode</label><select name="Mode" id="mode"><option value="none of the above">Off</option></select></div>`, 8);
-  var _tmpl$4 = /* @__PURE__ */ (0, import_web.template)(`<div><label for="mode">Intensity</label></div>`, 4);
-  var _tmpl$5 = /* @__PURE__ */ (0, import_web.template)(`<option>Vibrate</option>`, 2);
-  var _tmpl$6 = /* @__PURE__ */ (0, import_web.template)(`<option>Oscillate</option>`, 2);
-  var _tmpl$7 = /* @__PURE__ */ (0, import_web.template)(`<option>Linear</option>`, 2);
+  // plugins/IntifaceIntegration/store.ts
   var {
-    solid: {
-      createSignal,
-      For
-    },
-    plugin: {
-      store: uglyStore
-    },
-    ui: {
-      TextBox,
-      Button,
-      ButtonSizes,
-      Slider,
-      ButtonColors
-    },
-    flux: {
-      intercept
-    }
+    plugin: { store: uglyStore }
   } = shelter;
-  var VibrationMode = {
+  var VibrationOutput = {
     Vibrate: "vibrate",
     Oscillate: "oscillate",
     Linear: "linear"
   };
-  var store = uglyStore;
-  store.serverURL ??= "ws://localhost:12345";
-  store.soundId ??= "1144838692540792935";
-  store.intensity ??= 1;
-  store.mode ??= "vibrate";
-  var connector = new Buttplug.ButtplugBrowserWebsocketClientConnector(store.serverURL);
-  var client = new Buttplug.ButtplugClient("Shelter Intiface");
-  var [devices, setDevices] = createSignal([]);
-  client.connect(connector);
-  var lastSoundId;
-  var [selectedDevice, setSelectedDevice] = createSignal();
-  var updateDevices = () => {
-    setDevices(client.devices);
+  var VibrationMode = {
+    Binary: "binary",
+    Eased: "eased"
   };
-  client.addListener("deviceadded", updateDevices);
-  client.addListener("deviceremoved", updateDevices);
-  client.addListener("scanningfinished", updateDevices);
+  var store = uglyStore;
+  var state = {
+    lastSoundId: null
+  };
+  var store_default = store;
+
+  // plugins/IntifaceIntegration/signals.ts
+  var {
+    solid: { createSignal }
+  } = shelter;
+  var [devices, setDevices] = createSignal([]);
+  var [selectedDevice, setSelectedDevice] = createSignal();
+
+  // plugins/IntifaceIntegration/binaryImpulseHandler.ts
+  var {
+    flux: { intercept }
+  } = shelter;
   var FALLBACK_TIMEOUT = 5500;
   var activeSfx = {};
-  var unintercept = intercept(({
+  var unintercept = null;
+  var binaryImpulseHandler = ({
     type,
     soundId,
     userId
@@ -9750,18 +9732,18 @@
     switch (type) {
       case "GUILD_SOUNDBOARD_SOUND_PLAY_START":
         {
-          if (soundId !== store.soundId) {
+          if (soundId !== store_default.soundId) {
             return;
           }
-          switch (store.mode) {
-            case VibrationMode.Vibrate:
-              void selectedDevice()?.vibrate(store.intensity);
+          switch (store_default.outputMode) {
+            case VibrationOutput.Vibrate:
+              void selectedDevice()?.vibrate(store_default.intensity);
               break;
-            case VibrationMode.Oscillate:
-              void selectedDevice()?.oscillate(store.intensity);
+            case VibrationOutput.Oscillate:
+              void selectedDevice()?.oscillate(store_default.intensity);
               break;
-            case VibrationMode.Linear:
-              void selectedDevice()?.linear(store.intensity);
+            case VibrationOutput.Linear:
+              void selectedDevice()?.linear(store_default.intensity);
               break;
           }
           const key = `${userId}.${soundId}`;
@@ -9784,7 +9766,6 @@
         break;
       case "GUILD_SOUNDBOARD_SOUND_PLAY_END":
         {
-          lastSoundId = soundId;
           const key = `${userId}.${soundId}`;
           if (key in activeSfx) {
             const entry = activeSfx[key];
@@ -9798,28 +9779,163 @@
         }
         break;
     }
+  };
+  var init = () => {
+    unintercept = intercept(binaryImpulseHandler);
+  };
+  var deinit = () => {
+    unintercept != null && unintercept();
+    unintercept = null;
+  };
+  var binaryImpulseHandler_default = {
+    init,
+    deinit
+  };
+
+  // plugins/IntifaceIntegration/easedImpulseHandler.ts
+  var {
+    flux: { intercept: intercept2 }
+  } = shelter;
+  var INTENSITY = 0.3;
+  var SIGNAL_WINDOW = 5e3;
+  var FREQUENCE = 50;
+  var impulses = [];
+  var easeIn = (x) => 1 - Math.pow(1 - x, 3);
+  var easeOut = (x) => Math.sqrt(1 - Math.pow(x - 1, 2));
+  var CUTOFF = 0.2;
+  var easingFn = (x) => x < CUTOFF ? easeIn(x / CUTOFF) : 1 - easeOut((x - CUTOFF) / (1 - CUTOFF));
+  var triggerSelectedOutput = (itensity) => {
+    switch (store_default.outputMode) {
+      case VibrationOutput.Vibrate:
+        void selectedDevice()?.vibrate(itensity);
+        break;
+      case VibrationOutput.Oscillate:
+        void selectedDevice()?.oscillate(itensity);
+        break;
+      case VibrationOutput.Linear:
+        void selectedDevice()?.linear(itensity);
+        break;
+    }
+  };
+  var iteration = () => {
+    let signal = 0;
+    const now = Date.now();
+    for (const imp of impulses) {
+      const elapsed = now - imp;
+      if (elapsed < SIGNAL_WINDOW) {
+        const beat = INTENSITY * easingFn(elapsed / SIGNAL_WINDOW);
+        signal += beat;
+      }
+    }
+    if (signal === 0) {
+      impulses = [];
+    }
+    triggerSelectedOutput(signal);
+  };
+  var unintercept2 = null;
+  var timer = null;
+  var easedImpulseHandler = ({
+    type,
+    soundId
+  }) => {
+    switch (type) {
+      case "GUILD_SOUNDBOARD_SOUND_PLAY_START":
+        {
+          if (soundId !== store_default.soundId) {
+            return;
+          }
+          impulses.push(Date.now());
+        }
+        break;
+    }
+  };
+  var init2 = () => {
+    unintercept2 = intercept2(easedImpulseHandler);
+    timer = setInterval(iteration, FREQUENCE);
+  };
+  var deinit2 = () => {
+    unintercept2 != null && unintercept2();
+    unintercept2 = null;
+    timer != null && clearTimeout(timer);
+    timer = null;
+  };
+  var easedImpulseHandler_default = {
+    init: init2,
+    deinit: deinit2
+  };
+
+  // plugins/IntifaceIntegration/index.tsx
+  var _tmpl$ = /* @__PURE__ */ (0, import_web.template)(`<div><div><label for="device">Buttplug device</label><select name="Device" id="device"><option value="none of the above">Off</option></select></div></div>`, 10);
+  var _tmpl$2 = /* @__PURE__ */ (0, import_web.template)(`<option></option>`, 2);
+  var _tmpl$3 = /* @__PURE__ */ (0, import_web.template)(`<div><label for="output">Output</label><select name="Output" id="output"><option value="none of the above">Off</option></select></div>`, 8);
+  var _tmpl$4 = /* @__PURE__ */ (0, import_web.template)(`<div><label for="mode">Mode</label><select name="Mode" id="mode"><option value="none of the above">Off</option></select></div>`, 8);
+  var _tmpl$5 = /* @__PURE__ */ (0, import_web.template)(`<option>Vibrate</option>`, 2);
+  var _tmpl$6 = /* @__PURE__ */ (0, import_web.template)(`<option>Oscillate</option>`, 2);
+  var _tmpl$7 = /* @__PURE__ */ (0, import_web.template)(`<option>Linear</option>`, 2);
+  var _tmpl$8 = /* @__PURE__ */ (0, import_web.template)(`<div><label for="mode">Intensity</label></div>`, 4);
+  var {
+    solid: {
+      createSignal: createSignal2,
+      For
+    },
+    ui: {
+      TextBox,
+      Button,
+      ButtonSizes,
+      Slider,
+      ButtonColors
+    },
+    flux: {
+      intercept: intercept3
+    }
+  } = shelter;
+  store_default.serverURL ??= "ws://localhost:12345";
+  store_default.soundId ??= "1144838692540792935";
+  store_default.outputMode ??= "vibrate";
+  store_default.vibrationMode ??= "binary";
+  store_default.intensity ??= 1;
+  var connector = new Buttplug.ButtplugBrowserWebsocketClientConnector(store_default.serverURL);
+  var client = new Buttplug.ButtplugClient("Shelter Intiface");
+  client.connect(connector);
+  var updateDevices = () => setDevices(client.devices);
+  client.addListener("deviceadded", updateDevices);
+  client.addListener("deviceremoved", updateDevices);
+  client.addListener("scanningfinished", updateDevices);
+  var uninterceptRoot = intercept3(({
+    type,
+    soundId
+  }) => {
+    if (type === "GUILD_SOUNDBOARD_SOUND_PLAY_START") {
+      state.lastSoundId = soundId;
+    }
   });
+  var handler = null;
+  if (store_default.vibrationMode === "binary") {
+    handler = binaryImpulseHandler_default;
+    handler.init();
+  }
   var onUnload = () => {
-    unintercept();
+    uninterceptRoot();
+    handler != null && handler.deinit();
     client.removeListener("deviceadded", updateDevices);
     client.removeListener("deviceremoved", updateDevices);
     client.removeListener("scanningfinished", updateDevices);
     client.disconnect();
   };
   var debouncedNewConnector = (0, import_lodash.debounce)((e) => {
-    store.serverURL = e;
+    store_default.serverURL = e;
     client.disconnect().then(() => {
-      connector = new Buttplug.ButtplugBrowserWebsocketClientConnector(store.serverURL);
+      connector = new Buttplug.ButtplugBrowserWebsocketClientConnector(store_default.serverURL);
       client.connect(connector);
     });
   }, 1e3);
   var settings = () => {
-    const [recentlyPressed, setRecentlyPressed] = createSignal(false);
+    const [recentlyPressed, setRecentlyPressed] = createSignal2(false);
     return (() => {
       const _el$ = _tmpl$.cloneNode(true), _el$2 = _el$.firstChild, _el$3 = _el$2.firstChild, _el$4 = _el$3.nextSibling, _el$5 = _el$4.firstChild;
       (0, import_web4.insert)(_el$, (0, import_web6.createComponent)(TextBox, {
         get value() {
-          return store.serverURL;
+          return store_default.serverURL;
         },
         onInput: debouncedNewConnector
       }), _el$2);
@@ -9829,11 +9945,8 @@
         },
         onClick: () => {
           setRecentlyPressed(true);
-          shelter.ui.showToast({
-            title: `Updated to sound ${lastSoundId}!`
-          });
           setTimeout(() => setRecentlyPressed(false), 2500);
-          store.soundId = lastSoundId;
+          store_default.soundId = state.lastSoundId;
         },
         get color() {
           return recentlyPressed() ? ButtonColors.GREEN : ButtonColors.BRAND;
@@ -9868,37 +9981,37 @@
         return () => _c$() && [(() => {
           const _el$7 = _tmpl$3.cloneNode(true), _el$8 = _el$7.firstChild, _el$9 = _el$8.nextSibling, _el$10 = _el$9.firstChild;
           _el$9.addEventListener("change", (e) => {
-            store.mode = Object.values(VibrationMode).includes(e.target.value) ? e.target.value : null;
+            store_default.outputMode = Object.values(VibrationOutput).includes(e.target.value) ? e.target.value : null;
           });
           (0, import_web4.insert)(_el$9, (() => {
             const _c$2 = (0, import_web5.memo)(() => selectedDevice().vibrateAttributes.length > 0);
             return () => _c$2() && (() => {
-              const _el$13 = _tmpl$5.cloneNode(true);
-              (0, import_web3.effect)(() => _el$13.selected = store.mode === VibrationMode.Vibrate);
-              (0, import_web3.effect)(() => _el$13.value = VibrationMode.Vibrate);
-              return _el$13;
+              const _el$15 = _tmpl$5.cloneNode(true);
+              (0, import_web3.effect)(() => _el$15.selected = store_default.outputMode === VibrationOutput.Vibrate);
+              (0, import_web3.effect)(() => _el$15.value = VibrationOutput.Vibrate);
+              return _el$15;
             })();
           })(), null);
           (0, import_web4.insert)(_el$9, (() => {
             const _c$3 = (0, import_web5.memo)(() => selectedDevice().oscillateAttributes.length > 0);
             return () => _c$3() && (() => {
-              const _el$14 = _tmpl$6.cloneNode(true);
-              (0, import_web3.effect)(() => _el$14.selected = store.mode === VibrationMode.Oscillate);
-              (0, import_web3.effect)(() => _el$14.value = VibrationMode.Oscillate);
-              return _el$14;
+              const _el$16 = _tmpl$6.cloneNode(true);
+              (0, import_web3.effect)(() => _el$16.selected = store_default.outputMode === VibrationOutput.Oscillate);
+              (0, import_web3.effect)(() => _el$16.value = VibrationOutput.Oscillate);
+              return _el$16;
             })();
           })(), null);
           (0, import_web4.insert)(_el$9, (() => {
             const _c$4 = (0, import_web5.memo)(() => selectedDevice().linear.length > 0);
             return () => _c$4() && (() => {
-              const _el$15 = _tmpl$7.cloneNode(true);
-              (0, import_web3.effect)(() => _el$15.selected = store.mode === VibrationMode.Linear);
-              (0, import_web3.effect)(() => _el$15.value = VibrationMode.Linear);
-              return _el$15;
+              const _el$17 = _tmpl$7.cloneNode(true);
+              (0, import_web3.effect)(() => _el$17.selected = store_default.outputMode === VibrationOutput.Linear);
+              (0, import_web3.effect)(() => _el$17.value = VibrationOutput.Linear);
+              return _el$17;
             })();
           })(), null);
           (0, import_web3.effect)((_p$) => {
-            const _v$5 = styles_default["selectRow"], _v$6 = styles_default["selectLabel"], _v$7 = styles_default["selectLabel"];
+            const _v$5 = styles_default["selectRow"], _v$6 = styles_default["selectLabel"], _v$7 = styles_default["select"];
             _v$5 !== _p$._v$5 && (0, import_web2.className)(_el$7, _p$._v$5 = _v$5);
             _v$6 !== _p$._v$6 && (0, import_web2.className)(_el$8, _p$._v$6 = _v$6);
             _v$7 !== _p$._v$7 && (0, import_web2.className)(_el$9, _p$._v$7 = _v$7);
@@ -9910,29 +10023,72 @@
           });
           return _el$7;
         })(), (() => {
-          const _el$11 = _tmpl$4.cloneNode(true), _el$12 = _el$11.firstChild;
-          (0, import_web4.insert)(_el$11, (0, import_web6.createComponent)(Slider, {
-            get value() {
-              return store.intensity;
-            },
-            onInput: (e) => store.intensity = +e,
-            min: 0,
-            max: 1,
-            get ["class"]() {
-              return styles_default["select"];
+          const _el$11 = _tmpl$4.cloneNode(true), _el$12 = _el$11.firstChild, _el$13 = _el$12.nextSibling, _el$14 = _el$13.firstChild;
+          _el$13.addEventListener("change", (e) => {
+            store_default.vibrationMode = Object.values(VibrationMode).includes(e.target.value) ? e.target.value : null;
+            handler != null && handler.deinit();
+            switch (store_default.vibrationMode) {
+              case "binary":
+                handler = binaryImpulseHandler_default;
+                handler.init();
+                break;
+              case "eased":
+                handler = easedImpulseHandler_default;
+                handler.init();
+                break;
             }
+          });
+          (0, import_web4.insert)(_el$13, (0, import_web6.createComponent)(For, {
+            get each() {
+              return Object.entries(VibrationMode);
+            },
+            children: ([name, mode]) => (() => {
+              const _el$18 = _tmpl$2.cloneNode(true);
+              _el$18.value = mode;
+              (0, import_web4.insert)(_el$18, name);
+              (0, import_web3.effect)(() => _el$18.selected = store_default.vibrationMode === mode);
+              return _el$18;
+            })()
           }), null);
           (0, import_web3.effect)((_p$) => {
-            const _v$8 = styles_default["selectRow"], _v$9 = styles_default["selectLabel"];
+            const _v$8 = styles_default["selectRow"], _v$9 = styles_default["selectLabel"], _v$10 = styles_default["select"];
             _v$8 !== _p$._v$8 && (0, import_web2.className)(_el$11, _p$._v$8 = _v$8);
             _v$9 !== _p$._v$9 && (0, import_web2.className)(_el$12, _p$._v$9 = _v$9);
+            _v$10 !== _p$._v$10 && (0, import_web2.className)(_el$13, _p$._v$10 = _v$10);
             return _p$;
           }, {
             _v$8: void 0,
-            _v$9: void 0
+            _v$9: void 0,
+            _v$10: void 0
           });
           return _el$11;
-        })()];
+        })(), (0, import_web5.memo)((() => {
+          const _c$5 = (0, import_web5.memo)(() => store_default.vibrationMode === VibrationMode.Binary);
+          return () => _c$5() && (() => {
+            const _el$19 = _tmpl$8.cloneNode(true), _el$20 = _el$19.firstChild;
+            (0, import_web4.insert)(_el$19, (0, import_web6.createComponent)(Slider, {
+              get value() {
+                return store_default.intensity;
+              },
+              onInput: (e) => store_default.intensity = +e,
+              min: 0,
+              max: 1,
+              get ["class"]() {
+                return styles_default["select"];
+              }
+            }), null);
+            (0, import_web3.effect)((_p$) => {
+              const _v$11 = styles_default["selectRow"], _v$12 = styles_default["selectLabel"];
+              _v$11 !== _p$._v$11 && (0, import_web2.className)(_el$19, _p$._v$11 = _v$11);
+              _v$12 !== _p$._v$12 && (0, import_web2.className)(_el$20, _p$._v$12 = _v$12);
+              return _p$;
+            }, {
+              _v$11: void 0,
+              _v$12: void 0
+            });
+            return _el$19;
+          })();
+        })())];
       })(), null);
       (0, import_web3.effect)((_p$) => {
         const _v$ = styles_default["settingsBox"], _v$2 = styles_default["selectRow"], _v$3 = styles_default["selectLabel"], _v$4 = styles_default["select"];
