@@ -53,7 +53,17 @@ client.addListener("deviceadded", updateDevices);
 client.addListener("deviceremoved", updateDevices);
 client.addListener("scanningfinished", updateDevices);
 
-const activeSfx: Record<string, ReturnType<typeof setTimeout>> = {};
+type PRecord<K extends keyof never, T> = {
+  [P in K]?: T;
+};
+
+// how long to play until cancelled in case event is lost
+const FALLBACK_TIMEOUT = 5500;
+type ActiveSound = {
+  timeout: ReturnType<typeof setTimeout> | null;
+  activeCount: number;
+};
+const activeSfx: PRecord<string, ActiveSound> = {};
 
 type SoundboardPayload = {
   type: "GUILD_SOUNDBOARD_SOUND_PLAY_START" | "GUILD_SOUNDBOARD_SOUND_PLAY_END";
@@ -64,33 +74,55 @@ const unintercept = intercept(
   ({ type, soundId, userId }: SoundboardPayload) => {
     switch (type) {
       case "GUILD_SOUNDBOARD_SOUND_PLAY_START":
-        if (soundId !== store.soundId) {
-          return;
-        }
+        {
+          if (soundId !== store.soundId) {
+            return;
+          }
 
-        switch (store.mode) {
-          case VibrationMode.Vibrate:
-            void selectedDevice()?.vibrate(store.intensity);
-            break;
-          case VibrationMode.Oscillate:
-            void selectedDevice()?.oscillate(store.intensity);
-            break;
-          case VibrationMode.Linear:
-            void selectedDevice()?.linear(store.intensity);
-            break;
-        }
+          switch (store.mode) {
+            case VibrationMode.Vibrate:
+              void selectedDevice()?.vibrate(store.intensity);
+              break;
+            case VibrationMode.Oscillate:
+              void selectedDevice()?.oscillate(store.intensity);
+              break;
+            case VibrationMode.Linear:
+              void selectedDevice()?.linear(store.intensity);
+              break;
+          }
 
-        activeSfx[`${userId}.${soundId}`] = setTimeout(() => {
-          selectedDevice()?.stop();
-        }, 10000);
+          const key = `${userId}.${soundId}`;
+          if (activeSfx[key] === undefined) {
+            activeSfx[key] ??= {
+              timeout: null,
+              activeCount: 0,
+            };
+          }
+          const entry = activeSfx[key];
+          entry.timeout != null && clearTimeout(entry.timeout);
+          entry.timeout = setTimeout(() => {
+            console.warn("Stopping buttplug due to timeout");
+            selectedDevice()?.stop();
+            clearTimeout(entry.timeout);
+            entry.activeCount = 0;
+          }, FALLBACK_TIMEOUT);
+          entry.activeCount += 1;
+        }
         break;
       case "GUILD_SOUNDBOARD_SOUND_PLAY_END":
-        lastSoundId = soundId;
+        {
+          lastSoundId = soundId;
 
-        if (`${userId}.${soundId}` in activeSfx) {
-          selectedDevice()?.stop();
-          clearTimeout(activeSfx[`${userId}.${soundId}`]);
-          delete activeSfx[`${userId}.${soundId}`];
+          const key = `${userId}.${soundId}`;
+          if (key in activeSfx) {
+            const entry = activeSfx[key];
+            entry.activeCount -= 1;
+            if (entry.activeCount === 0) {
+              clearTimeout(entry.timeout);
+              entry.timeout = null;
+              selectedDevice()?.stop();
+            }
+          }
         }
         break;
     }
