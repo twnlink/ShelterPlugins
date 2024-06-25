@@ -4,133 +4,55 @@ import { debounce } from "lodash";
 // @ts-expect-error bad framework
 import styles from "./styles.scss";
 
-import { ButtplugClientDevice } from "buttplug";
+import store, { state, VibrationMode, VibrationOutput } from "./store";
+import binaryImpulseHandler from "./binaryImpulseHandler";
+import {
+  devices,
+  selectedDevice,
+  setDevices,
+  setSelectedDevice,
+} from "./signals";
+import SoundboardPayload from "./SoundboardPayload";
 
 const {
   solid: { createSignal, For },
-  plugin: { store: uglyStore },
   ui: { TextBox, Button, ButtonSizes, Slider, ButtonColors },
   flux: { intercept },
 } = shelter;
 
-const VibrationMode = {
-  Vibrate: "vibrate",
-  Oscillate: "oscillate",
-  Linear: "linear",
-} as const;
-type VibrationMode = (typeof VibrationMode)[keyof typeof VibrationMode];
-
-const store = uglyStore as {
-  serverURL: string;
-  soundId: string;
-  intensity: number;
-  mode: VibrationMode;
-};
-
 store.serverURL ??= "ws://localhost:12345";
 store.soundId ??= "1144838692540792935";
+store.outputMode ??= "vibrate";
+store.vibrationMode ??= "binary";
 store.intensity ??= 1.0;
-store.mode ??= "vibrate";
 
 let connector = new Buttplug.ButtplugBrowserWebsocketClientConnector(
   store.serverURL,
 );
 const client = new Buttplug.ButtplugClient("Shelter Intiface");
 
-const [devices, setDevices] = createSignal<ButtplugClientDevice[]>([]);
 client.connect(connector);
 
-let lastSoundId: string;
-
-const [selectedDevice, setSelectedDevice] = createSignal<
-  Buttplug.ButtplugClientDevice | undefined
->();
-
-const updateDevices = () => {
-  setDevices(client.devices);
-};
+const updateDevices = () => setDevices(client.devices);
 client.addListener("deviceadded", updateDevices);
 client.addListener("deviceremoved", updateDevices);
 client.addListener("scanningfinished", updateDevices);
 
-type PRecord<K extends keyof never, T> = {
-  [P in K]?: T;
-};
+let uninterceptRoot = intercept(({ type, soundId }: SoundboardPayload) => {
+  if (type === "GUILD_SOUNDBOARD_SOUND_PLAY_START") {
+    state.lastSoundId = soundId;
+  }
+});
+let uninterceptVibrationHandler: ReturnType<typeof intercept> | null = null;
 
-// how long to play until cancelled in case event is lost
-const FALLBACK_TIMEOUT = 5500;
-type ActiveSound = {
-  timeout: ReturnType<typeof setTimeout> | null;
-  activeCount: number;
-};
-const activeSfx: PRecord<string, ActiveSound> = {};
-
-type SoundboardPayload = {
-  type: "GUILD_SOUNDBOARD_SOUND_PLAY_START" | "GUILD_SOUNDBOARD_SOUND_PLAY_END";
-  soundId: string;
-  userId: string;
-};
-const unintercept = intercept(
-  ({ type, soundId, userId }: SoundboardPayload) => {
-    switch (type) {
-      case "GUILD_SOUNDBOARD_SOUND_PLAY_START":
-        {
-          if (soundId !== store.soundId) {
-            return;
-          }
-
-          switch (store.mode) {
-            case VibrationMode.Vibrate:
-              void selectedDevice()?.vibrate(store.intensity);
-              break;
-            case VibrationMode.Oscillate:
-              void selectedDevice()?.oscillate(store.intensity);
-              break;
-            case VibrationMode.Linear:
-              void selectedDevice()?.linear(store.intensity);
-              break;
-          }
-
-          const key = `${userId}.${soundId}`;
-          if (activeSfx[key] === undefined) {
-            activeSfx[key] ??= {
-              timeout: null,
-              activeCount: 0,
-            };
-          }
-          const entry = activeSfx[key];
-          entry.timeout != null && clearTimeout(entry.timeout);
-          entry.timeout = setTimeout(() => {
-            console.warn("Stopping buttplug due to timeout");
-            selectedDevice()?.stop();
-            clearTimeout(entry.timeout);
-            entry.activeCount = 0;
-          }, FALLBACK_TIMEOUT);
-          entry.activeCount += 1;
-        }
-        break;
-      case "GUILD_SOUNDBOARD_SOUND_PLAY_END":
-        {
-          lastSoundId = soundId;
-
-          const key = `${userId}.${soundId}`;
-          if (key in activeSfx) {
-            const entry = activeSfx[key];
-            entry.activeCount -= 1;
-            if (entry.activeCount === 0) {
-              clearTimeout(entry.timeout);
-              entry.timeout = null;
-              selectedDevice()?.stop();
-            }
-          }
-        }
-        break;
-    }
-  },
-);
+if (store.vibrationMode === "binary") {
+  uninterceptVibrationHandler = intercept(binaryImpulseHandler);
+}
 
 export const onUnload = () => {
-  unintercept();
+  uninterceptRoot();
+  uninterceptVibrationHandler != null && uninterceptVibrationHandler();
+
   client.removeListener("deviceadded", updateDevices);
   client.removeListener("deviceremoved", updateDevices);
   client.removeListener("scanningfinished", updateDevices);
@@ -159,9 +81,8 @@ export const settings = () => {
           size={ButtonSizes.LARGE}
           onClick={() => {
             setRecentlyPressed(true);
-            shelter.ui.showToast({ title: `Updated to sound ${lastSoundId}!` });
             setTimeout(() => setRecentlyPressed(false), 2500);
-            store.soundId = lastSoundId;
+            store.soundId = state.lastSoundId;
           }}
           color={recentlyPressed() ? ButtonColors.GREEN : ButtonColors.BRAND}
           disabled={recentlyPressed()}
@@ -203,42 +124,42 @@ export const settings = () => {
         {selectedDevice() !== undefined && (
           <>
             <div class={styles["selectRow"]}>
-              <label for="mode" class={styles["selectLabel"]}>
-                Mode
+              <label for="output" class={styles["selectLabel"]}>
+                Output
               </label>
               <select
-                name="Mode"
-                id="mode"
+                name="Output"
+                id="output"
                 onChange={(e) => {
-                  store.mode = (
-                    Object.values(VibrationMode) as string[]
+                  store.outputMode = (
+                    Object.values(VibrationOutput) as string[]
                   ).includes(e.target.value)
-                    ? (e.target.value as VibrationMode)
+                    ? (e.target.value as VibrationOutput)
                     : null;
                 }}
-                class={styles["selectLabel"]}
+                class={styles["select"]}
               >
                 <option value="none of the above">Off</option>
                 {selectedDevice().vibrateAttributes.length > 0 && (
                   <option
-                    value={VibrationMode.Vibrate}
-                    selected={store.mode === VibrationMode.Vibrate}
+                    value={VibrationOutput.Vibrate}
+                    selected={store.outputMode === VibrationOutput.Vibrate}
                   >
                     Vibrate
                   </option>
                 )}
                 {selectedDevice().oscillateAttributes.length > 0 && (
                   <option
-                    value={VibrationMode.Oscillate}
-                    selected={store.mode === VibrationMode.Oscillate}
+                    value={VibrationOutput.Oscillate}
+                    selected={store.outputMode === VibrationOutput.Oscillate}
                   >
                     Oscillate
                   </option>
                 )}
                 {selectedDevice().linear.length > 0 && (
                   <option
-                    value={VibrationMode.Linear}
-                    selected={store.mode === VibrationMode.Linear}
+                    value={VibrationOutput.Linear}
+                    selected={store.outputMode === VibrationOutput.Linear}
                   >
                     Linear
                   </option>
@@ -248,16 +169,48 @@ export const settings = () => {
 
             <div class={styles["selectRow"]}>
               <label for="mode" class={styles["selectLabel"]}>
-                Intensity
+                Mode
               </label>
-              <Slider
-                value={store.intensity}
-                onInput={(e) => (store.intensity = +e)}
-                min={0.0}
-                max={1.0}
+              <select
+                name="Mode"
+                id="mode"
+                onChange={(e) => {
+                  store.vibrationMode = (
+                    Object.values(VibrationMode) as string[]
+                  ).includes(e.target.value)
+                    ? (e.target.value as VibrationMode)
+                    : null;
+                }}
                 class={styles["select"]}
-              />
+              >
+                <option value="none of the above">Off</option>
+                <For each={Object.entries(VibrationMode)}>
+                  {([name, mode]) => (
+                    <option
+                      value={mode}
+                      selected={store.vibrationMode === mode}
+                    >
+                      {name}
+                    </option>
+                  )}
+                </For>
+              </select>
             </div>
+
+            {store.vibrationMode === VibrationMode.Binary && (
+              <div class={styles["selectRow"]}>
+                <label for="mode" class={styles["selectLabel"]}>
+                  Intensity
+                </label>
+                <Slider
+                  value={store.intensity}
+                  onInput={(e) => (store.intensity = +e)}
+                  min={0.0}
+                  max={1.0}
+                  class={styles["select"]}
+                />
+              </div>
+            )}
           </>
         )}
       </div>
