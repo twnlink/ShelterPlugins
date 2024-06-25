@@ -9740,6 +9740,7 @@
   client.addListener("deviceadded", updateDevices);
   client.addListener("deviceremoved", updateDevices);
   client.addListener("scanningfinished", updateDevices);
+  var FALLBACK_TIMEOUT = 5500;
   var activeSfx = {};
   var unintercept = intercept(({
     type,
@@ -9748,30 +9749,52 @@
   }) => {
     switch (type) {
       case "GUILD_SOUNDBOARD_SOUND_PLAY_START":
-        if (soundId !== store.soundId) {
-          return;
+        {
+          if (soundId !== store.soundId) {
+            return;
+          }
+          switch (store.mode) {
+            case VibrationMode.Vibrate:
+              void selectedDevice()?.vibrate(store.intensity);
+              break;
+            case VibrationMode.Oscillate:
+              void selectedDevice()?.oscillate(store.intensity);
+              break;
+            case VibrationMode.Linear:
+              void selectedDevice()?.linear(store.intensity);
+              break;
+          }
+          const key = `${userId}.${soundId}`;
+          if (activeSfx[key] === void 0) {
+            activeSfx[key] ??= {
+              timeout: null,
+              activeCount: 0
+            };
+          }
+          const entry = activeSfx[key];
+          entry.timeout != null && clearTimeout(entry.timeout);
+          entry.timeout = setTimeout(() => {
+            console.warn("Stopping buttplug due to timeout");
+            selectedDevice()?.stop();
+            clearTimeout(entry.timeout);
+            entry.activeCount = 0;
+          }, FALLBACK_TIMEOUT);
+          entry.activeCount += 1;
         }
-        switch (store.mode) {
-          case VibrationMode.Vibrate:
-            void selectedDevice()?.vibrate(store.intensity);
-            break;
-          case VibrationMode.Oscillate:
-            void selectedDevice()?.oscillate(store.intensity);
-            break;
-          case VibrationMode.Linear:
-            void selectedDevice()?.linear(store.intensity);
-            break;
-        }
-        activeSfx[`${userId}.${soundId}`] = setTimeout(() => {
-          selectedDevice()?.stop();
-        }, 1e4);
         break;
       case "GUILD_SOUNDBOARD_SOUND_PLAY_END":
-        lastSoundId = soundId;
-        if (`${userId}.${soundId}` in activeSfx) {
-          selectedDevice()?.stop();
-          clearTimeout(activeSfx[`${userId}.${soundId}`]);
-          delete activeSfx[`${userId}.${soundId}`];
+        {
+          lastSoundId = soundId;
+          const key = `${userId}.${soundId}`;
+          if (key in activeSfx) {
+            const entry = activeSfx[key];
+            entry.activeCount -= 1;
+            if (entry.activeCount === 0) {
+              clearTimeout(entry.timeout);
+              entry.timeout = null;
+              selectedDevice()?.stop();
+            }
+          }
         }
         break;
     }
@@ -9835,6 +9858,7 @@
         children: (d) => (() => {
           const _el$6 = _tmpl$2.cloneNode(true);
           (0, import_web4.insert)(_el$6, () => d.name);
+          (0, import_web3.effect)(() => _el$6.selected = selectedDevice()?.index === d.index);
           (0, import_web3.effect)(() => _el$6.value = d.index.toString());
           return _el$6;
         })()
@@ -9844,16 +9868,13 @@
         return () => _c$() && [(() => {
           const _el$7 = _tmpl$3.cloneNode(true), _el$8 = _el$7.firstChild, _el$9 = _el$8.nextSibling, _el$10 = _el$9.firstChild;
           _el$9.addEventListener("change", (e) => {
-            if (Object.values(VibrationMode).includes(e.target.value)) {
-              store.mode = e.target.value;
-            } else {
-              store.mode = null;
-            }
+            store.mode = Object.values(VibrationMode).includes(e.target.value) ? e.target.value : null;
           });
           (0, import_web4.insert)(_el$9, (() => {
             const _c$2 = (0, import_web5.memo)(() => selectedDevice().vibrateAttributes.length > 0);
             return () => _c$2() && (() => {
               const _el$13 = _tmpl$5.cloneNode(true);
+              (0, import_web3.effect)(() => _el$13.selected = store.mode === VibrationMode.Vibrate);
               (0, import_web3.effect)(() => _el$13.value = VibrationMode.Vibrate);
               return _el$13;
             })();
@@ -9862,6 +9883,7 @@
             const _c$3 = (0, import_web5.memo)(() => selectedDevice().oscillateAttributes.length > 0);
             return () => _c$3() && (() => {
               const _el$14 = _tmpl$6.cloneNode(true);
+              (0, import_web3.effect)(() => _el$14.selected = store.mode === VibrationMode.Oscillate);
               (0, import_web3.effect)(() => _el$14.value = VibrationMode.Oscillate);
               return _el$14;
             })();
@@ -9870,6 +9892,7 @@
             const _c$4 = (0, import_web5.memo)(() => selectedDevice().linear.length > 0);
             return () => _c$4() && (() => {
               const _el$15 = _tmpl$7.cloneNode(true);
+              (0, import_web3.effect)(() => _el$15.selected = store.mode === VibrationMode.Linear);
               (0, import_web3.effect)(() => _el$15.value = VibrationMode.Linear);
               return _el$15;
             })();
