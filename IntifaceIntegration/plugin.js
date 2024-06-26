@@ -9834,6 +9834,9 @@
     if (signal === 0) {
       impulses = [];
     }
+    if (signal > 1) {
+      signal = 1;
+    }
     if (signal < store_default.signalCutoff) {
       signal = 0;
     }
