@@ -9672,23 +9672,29 @@
     onUnload: () => onUnload,
     settings: () => settings
   });
-  var import_web = __toESM(require_web());
-  var import_web2 = __toESM(require_web());
-  var import_web3 = __toESM(require_web());
-  var import_web4 = __toESM(require_web());
-  var import_web5 = __toESM(require_web());
   var import_web6 = __toESM(require_web());
+  var import_web7 = __toESM(require_web());
+  var import_web8 = __toESM(require_web());
+  var import_web9 = __toESM(require_web());
+  var import_web10 = __toESM(require_web());
+  var import_web11 = __toESM(require_web());
   var Buttplug = __toESM(require_src());
   var import_lodash = __toESM(require_lodash());
 
   // plugins/IntifaceIntegration/styles.scss
-  shelter.plugin.scoped.ui.injectCss(`._settingsBox_1jnoy_1{display:flex;flex-direction:column;gap:1rem}._button_1jnoy_1{width:100%}._selectRow_1jnoy_1{width:100%;display:flex;align-items:center}._selectLabel_1jnoy_1{flex-grow:0;flex-shrink:0;margin-right:.5rem}._select_1jnoy_1{flex-grow:1;flex-shrink:0}`);
+  shelter.plugin.scoped.ui.injectCss(`._label_yzpo3_1{color:var(--header-secondary);font-family:var(--font-display);font-size:12px;line-height:1.3333333333;font-weight:700;text-transform:uppercase;letter-spacing:.02em}._title_yzpo3_1{margin-bottom:.5rem;display:block}._settingsBox_yzpo3_1{display:flex;flex-direction:column;gap:1rem;padding-right:8px}._settingsBox_yzpo3_1 p{margin-top:0}._button_yzpo3_1{width:100%}._selectRow_yzpo3_1{width:100%;display:flex;align-items:center}._selectGap_yzpo3_1{flex-grow:1}._selectLabel_yzpo3_1{flex-grow:0;flex-shrink:0;margin-right:.5rem}._select_yzpo3_1{flex-grow:0;flex-shrink:0;width:30ch}._sliderBox_yzpo3_1{display:flex;align-items:center}._sliderValue_yzpo3_1{width:9ch}._slider_yzpo3_1{margin-top:-12px;margin-bottom:calc(-1rem - 12px);flex-grow:1}`);
   var styles_default = {
-    "settingsBox": "_settingsBox_1jnoy_1",
-    "button": "_button_1jnoy_1",
-    "selectRow": "_selectRow_1jnoy_1",
-    "selectLabel": "_selectLabel_1jnoy_1",
-    "select": "_select_1jnoy_1"
+    "label": "_label_yzpo3_1",
+    "title": "_title_yzpo3_1",
+    "settingsBox": "_settingsBox_yzpo3_1",
+    "button": "_button_yzpo3_1",
+    "selectRow": "_selectRow_yzpo3_1",
+    "selectGap": "_selectGap_yzpo3_1",
+    "selectLabel": "_selectLabel_yzpo3_1",
+    "select": "_select_yzpo3_1",
+    "sliderBox": "_sliderBox_yzpo3_1",
+    "sliderValue": "_sliderValue_yzpo3_1",
+    "slider": "_slider_yzpo3_1"
   };
 
   // plugins/IntifaceIntegration/store.ts
@@ -9737,13 +9743,13 @@
           }
           switch (store_default.outputMode) {
             case VibrationOutput.Vibrate:
-              void selectedDevice()?.vibrate(store_default.intensity);
+              void selectedDevice()?.vibrate(store_default.signalIntensity);
               break;
             case VibrationOutput.Oscillate:
-              void selectedDevice()?.oscillate(store_default.intensity);
+              void selectedDevice()?.oscillate(store_default.signalIntensity);
               break;
             case VibrationOutput.Linear:
-              void selectedDevice()?.linear(store_default.intensity);
+              void selectedDevice()?.linear(store_default.signalIntensity);
               break;
           }
           const key = `${userId}.${soundId}`;
@@ -9796,8 +9802,6 @@
   var {
     flux: { intercept: intercept2 }
   } = shelter;
-  var INTENSITY = 0.3;
-  var SIGNAL_WINDOW = 5e3;
   var FREQUENCE = 50;
   var impulses = [];
   var easeIn = (x) => 1 - Math.pow(1 - x, 3);
@@ -9822,13 +9826,16 @@
     const now = Date.now();
     for (const imp of impulses) {
       const elapsed = now - imp;
-      if (elapsed < SIGNAL_WINDOW) {
-        const beat = INTENSITY * easingFn(elapsed / SIGNAL_WINDOW);
+      if (elapsed < store_default.impulseDuration) {
+        const beat = store_default.impulseIntensity * easingFn(elapsed / store_default.impulseDuration);
         signal += beat;
       }
     }
     if (signal === 0) {
       impulses = [];
+    }
+    if (signal < store_default.signalCutoff) {
+      signal = 0;
     }
     triggerSelectedOutput(signal);
   };
@@ -9864,15 +9871,60 @@
     deinit: deinit2
   };
 
+  // plugins/IntifaceIntegration/Slider.tsx
+  var import_web = __toESM(require_web());
+  var import_web2 = __toESM(require_web());
+  var import_web3 = __toESM(require_web());
+  var import_web4 = __toESM(require_web());
+  var import_web5 = __toESM(require_web());
+  var _tmpl$ = /* @__PURE__ */ (0, import_web.template)(`<div><div></div><div></div></div>`, 6);
+  var _tmpl$2 = /* @__PURE__ */ (0, import_web.template)(`<div></div>`, 2);
+  var {
+    ui: {
+      Slider: ShelterSlider
+    }
+  } = shelter;
+  var Slider = (props) => {
+    if (props.valueFormatter) {
+      return (() => {
+        const _el$ = _tmpl$.cloneNode(true), _el$2 = _el$.firstChild, _el$3 = _el$2.nextSibling;
+        (0, import_web5.insert)(_el$2, () => props.valueFormatter(props.value));
+        (0, import_web5.insert)(_el$3, (0, import_web4.createComponent)(ShelterSlider, props));
+        (0, import_web3.effect)((_p$) => {
+          const _v$ = styles_default["sliderBox"], _v$2 = styles_default["sliderValue"], _v$3 = styles_default["slider"];
+          _v$ !== _p$._v$ && (0, import_web2.className)(_el$, _p$._v$ = _v$);
+          _v$2 !== _p$._v$2 && (0, import_web2.className)(_el$2, _p$._v$2 = _v$2);
+          _v$3 !== _p$._v$3 && (0, import_web2.className)(_el$3, _p$._v$3 = _v$3);
+          return _p$;
+        }, {
+          _v$: void 0,
+          _v$2: void 0,
+          _v$3: void 0
+        });
+        return _el$;
+      })();
+    }
+    return (() => {
+      const _el$4 = _tmpl$2.cloneNode(true);
+      (0, import_web5.insert)(_el$4, (0, import_web4.createComponent)(ShelterSlider, props));
+      (0, import_web3.effect)(() => (0, import_web2.className)(_el$4, styles_default["slider"]));
+      return _el$4;
+    })();
+  };
+  var Slider_default = Slider;
+
   // plugins/IntifaceIntegration/index.tsx
-  var _tmpl$ = /* @__PURE__ */ (0, import_web.template)(`<div><div><label for="device">Buttplug device</label><select name="Device" id="device"><option value="none of the above">Off</option></select></div></div>`, 10);
-  var _tmpl$2 = /* @__PURE__ */ (0, import_web.template)(`<option></option>`, 2);
-  var _tmpl$3 = /* @__PURE__ */ (0, import_web.template)(`<div><label for="output">Output</label><select name="Output" id="output"><option value="none of the above">Off</option></select></div>`, 8);
-  var _tmpl$4 = /* @__PURE__ */ (0, import_web.template)(`<div><label for="mode">Mode</label><select name="Mode" id="mode"><option value="none of the above">Off</option></select></div>`, 8);
-  var _tmpl$5 = /* @__PURE__ */ (0, import_web.template)(`<option>Vibrate</option>`, 2);
-  var _tmpl$6 = /* @__PURE__ */ (0, import_web.template)(`<option>Oscillate</option>`, 2);
-  var _tmpl$7 = /* @__PURE__ */ (0, import_web.template)(`<option>Linear</option>`, 2);
-  var _tmpl$8 = /* @__PURE__ */ (0, import_web.template)(`<div><label for="mode">Intensity</label></div>`, 4);
+  var _tmpl$3 = /* @__PURE__ */ (0, import_web6.template)(`<div><div><label for="serverUrl">Server URL</label></div><div><label>Soundeffect</label><p>Select the most recently played sound. Anyone with access to the specific sound will be able to trigger it.</p></div><div><label for="device">Buttplug device</label><div></div><select name="Device" id="device"><option value="none of the above">Off</option></select></div></div>`, 22);
+  var _tmpl$22 = /* @__PURE__ */ (0, import_web6.template)(`<option></option>`, 2);
+  var _tmpl$32 = /* @__PURE__ */ (0, import_web6.template)(`<div><label for="output">Output</label><div></div><select name="Output" id="output"><option value="none of the above">Off</option></select></div>`, 10);
+  var _tmpl$4 = /* @__PURE__ */ (0, import_web6.template)(`<div><label for="mode">Mode</label><div></div><select name="Mode" id="mode"><option value="none of the above">Off</option></select></div>`, 10);
+  var _tmpl$5 = /* @__PURE__ */ (0, import_web6.template)(`<option>Vibrate</option>`, 2);
+  var _tmpl$6 = /* @__PURE__ */ (0, import_web6.template)(`<option>Oscillate</option>`, 2);
+  var _tmpl$7 = /* @__PURE__ */ (0, import_web6.template)(`<option>Linear</option>`, 2);
+  var _tmpl$8 = /* @__PURE__ */ (0, import_web6.template)(`<div><label>Intensity</label></div>`, 4);
+  var _tmpl$9 = /* @__PURE__ */ (0, import_web6.template)(`<div><label>Impulse Intensity</label><p>The strength of each impulse. The output signal strength is the sum of all impulses. There is a maximum signal strength, if the sum is above, it will be limited to the maximum.</p></div>`, 6);
+  var _tmpl$10 = /* @__PURE__ */ (0, import_web6.template)(`<div><label for="mode">Impulse window</label><p>How long each impulse have effect. Any impulse older than the window is culled.</p></div>`, 6);
+  var _tmpl$11 = /* @__PURE__ */ (0, import_web6.template)(`<div><label for="mode">Signal cutoff</label><p>Any signal below this level will be cut off.<br><small>Very weak signals above zero round up to minimum vibration. This prevents long drawn-out weak vibrations.</small></p></div>`, 9);
   var {
     solid: {
       createSignal: createSignal2,
@@ -9882,7 +9934,6 @@
       TextBox,
       Button,
       ButtonSizes,
-      Slider,
       ButtonColors
     },
     flux: {
@@ -9893,7 +9944,10 @@
   store_default.soundId ??= "1144838692540792935";
   store_default.outputMode ??= "vibrate";
   store_default.vibrationMode ??= "binary";
-  store_default.intensity ??= 1;
+  store_default.signalIntensity ??= 1;
+  store_default.impulseIntensity ??= 0.3;
+  store_default.impulseDuration ??= 5500;
+  store_default.signalCutoff ??= 0.06;
   var connector = new Buttplug.ButtplugBrowserWebsocketClientConnector(store_default.serverURL);
   var client = new Buttplug.ButtplugClient("Shelter Intiface");
   client.connect(connector);
@@ -9932,14 +9986,15 @@
   var settings = () => {
     const [recentlyPressed, setRecentlyPressed] = createSignal2(false);
     return (() => {
-      const _el$ = _tmpl$.cloneNode(true), _el$2 = _el$.firstChild, _el$3 = _el$2.firstChild, _el$4 = _el$3.nextSibling, _el$5 = _el$4.firstChild;
-      (0, import_web4.insert)(_el$, (0, import_web6.createComponent)(TextBox, {
+      const _el$ = _tmpl$3.cloneNode(true), _el$2 = _el$.firstChild, _el$3 = _el$2.firstChild, _el$4 = _el$2.nextSibling, _el$5 = _el$4.firstChild, _el$6 = _el$5.nextSibling, _el$7 = _el$4.nextSibling, _el$8 = _el$7.firstChild, _el$9 = _el$8.nextSibling, _el$10 = _el$9.nextSibling, _el$11 = _el$10.firstChild;
+      (0, import_web10.insert)(_el$2, (0, import_web11.createComponent)(TextBox, {
         get value() {
           return store_default.serverURL;
         },
-        onInput: debouncedNewConnector
-      }), _el$2);
-      (0, import_web4.insert)(_el$, (0, import_web6.createComponent)(Button, {
+        onInput: debouncedNewConnector,
+        id: "serverUrl"
+      }), null);
+      (0, import_web10.insert)(_el$4, (0, import_web11.createComponent)(Button, {
         get size() {
           return ButtonSizes.LARGE;
         },
@@ -9958,73 +10013,77 @@
           return styles_default["button"];
         },
         get children() {
-          return recentlyPressed() ? "\u2713" : "Select most recent played sound";
+          return recentlyPressed() ? "\u2713" : "Select soundclip";
         }
-      }), _el$2);
-      _el$4.addEventListener("change", (e) => {
+      }), _el$6);
+      _el$6.style.setProperty("margin-top", ".5rem");
+      _el$6.style.setProperty("margin-bottom", "0");
+      _el$10.addEventListener("change", (e) => {
         setSelectedDevice(devices().find((client2) => client2.index.toString() === e.target.value));
       });
-      (0, import_web4.insert)(_el$4, (0, import_web6.createComponent)(For, {
+      (0, import_web10.insert)(_el$10, (0, import_web11.createComponent)(For, {
         get each() {
           return devices();
         },
         children: (d) => (() => {
-          const _el$6 = _tmpl$2.cloneNode(true);
-          (0, import_web4.insert)(_el$6, () => d.name);
-          (0, import_web3.effect)(() => _el$6.selected = selectedDevice()?.index === d.index);
-          (0, import_web3.effect)(() => _el$6.value = d.index.toString());
-          return _el$6;
+          const _el$12 = _tmpl$22.cloneNode(true);
+          (0, import_web10.insert)(_el$12, () => d.name);
+          (0, import_web8.effect)(() => _el$12.selected = selectedDevice()?.index === d.index);
+          (0, import_web8.effect)(() => _el$12.value = d.index.toString());
+          return _el$12;
         })()
       }), null);
-      (0, import_web4.insert)(_el$, (() => {
-        const _c$ = (0, import_web5.memo)(() => selectedDevice() !== void 0);
+      (0, import_web10.insert)(_el$, (() => {
+        const _c$ = (0, import_web9.memo)(() => selectedDevice() != null);
         return () => _c$() && [(() => {
-          const _el$7 = _tmpl$3.cloneNode(true), _el$8 = _el$7.firstChild, _el$9 = _el$8.nextSibling, _el$10 = _el$9.firstChild;
-          _el$9.addEventListener("change", (e) => {
+          const _el$13 = _tmpl$32.cloneNode(true), _el$14 = _el$13.firstChild, _el$15 = _el$14.nextSibling, _el$16 = _el$15.nextSibling, _el$17 = _el$16.firstChild;
+          _el$16.addEventListener("change", (e) => {
             store_default.outputMode = Object.values(VibrationOutput).includes(e.target.value) ? e.target.value : null;
           });
-          (0, import_web4.insert)(_el$9, (() => {
-            const _c$2 = (0, import_web5.memo)(() => selectedDevice().vibrateAttributes.length > 0);
+          (0, import_web10.insert)(_el$16, (() => {
+            const _c$2 = (0, import_web9.memo)(() => selectedDevice().vibrateAttributes.length > 0);
             return () => _c$2() && (() => {
-              const _el$15 = _tmpl$5.cloneNode(true);
-              (0, import_web3.effect)(() => _el$15.selected = store_default.outputMode === VibrationOutput.Vibrate);
-              (0, import_web3.effect)(() => _el$15.value = VibrationOutput.Vibrate);
-              return _el$15;
+              const _el$23 = _tmpl$5.cloneNode(true);
+              (0, import_web8.effect)(() => _el$23.selected = store_default.outputMode === VibrationOutput.Vibrate);
+              (0, import_web8.effect)(() => _el$23.value = VibrationOutput.Vibrate);
+              return _el$23;
             })();
           })(), null);
-          (0, import_web4.insert)(_el$9, (() => {
-            const _c$3 = (0, import_web5.memo)(() => selectedDevice().oscillateAttributes.length > 0);
+          (0, import_web10.insert)(_el$16, (() => {
+            const _c$3 = (0, import_web9.memo)(() => selectedDevice().oscillateAttributes.length > 0);
             return () => _c$3() && (() => {
-              const _el$16 = _tmpl$6.cloneNode(true);
-              (0, import_web3.effect)(() => _el$16.selected = store_default.outputMode === VibrationOutput.Oscillate);
-              (0, import_web3.effect)(() => _el$16.value = VibrationOutput.Oscillate);
-              return _el$16;
+              const _el$24 = _tmpl$6.cloneNode(true);
+              (0, import_web8.effect)(() => _el$24.selected = store_default.outputMode === VibrationOutput.Oscillate);
+              (0, import_web8.effect)(() => _el$24.value = VibrationOutput.Oscillate);
+              return _el$24;
             })();
           })(), null);
-          (0, import_web4.insert)(_el$9, (() => {
-            const _c$4 = (0, import_web5.memo)(() => selectedDevice().linear.length > 0);
+          (0, import_web10.insert)(_el$16, (() => {
+            const _c$4 = (0, import_web9.memo)(() => selectedDevice().linear.length > 0);
             return () => _c$4() && (() => {
-              const _el$17 = _tmpl$7.cloneNode(true);
-              (0, import_web3.effect)(() => _el$17.selected = store_default.outputMode === VibrationOutput.Linear);
-              (0, import_web3.effect)(() => _el$17.value = VibrationOutput.Linear);
-              return _el$17;
+              const _el$25 = _tmpl$7.cloneNode(true);
+              (0, import_web8.effect)(() => _el$25.selected = store_default.outputMode === VibrationOutput.Linear);
+              (0, import_web8.effect)(() => _el$25.value = VibrationOutput.Linear);
+              return _el$25;
             })();
           })(), null);
-          (0, import_web3.effect)((_p$) => {
-            const _v$5 = styles_default["selectRow"], _v$6 = styles_default["selectLabel"], _v$7 = styles_default["select"];
-            _v$5 !== _p$._v$5 && (0, import_web2.className)(_el$7, _p$._v$5 = _v$5);
-            _v$6 !== _p$._v$6 && (0, import_web2.className)(_el$8, _p$._v$6 = _v$6);
-            _v$7 !== _p$._v$7 && (0, import_web2.className)(_el$9, _p$._v$7 = _v$7);
+          (0, import_web8.effect)((_p$) => {
+            const _v$8 = styles_default["selectRow"], _v$9 = `${styles_default["selectLabel"]} ${styles_default["label"]}`, _v$10 = styles_default["selectGap"], _v$11 = styles_default["select"];
+            _v$8 !== _p$._v$8 && (0, import_web7.className)(_el$13, _p$._v$8 = _v$8);
+            _v$9 !== _p$._v$9 && (0, import_web7.className)(_el$14, _p$._v$9 = _v$9);
+            _v$10 !== _p$._v$10 && (0, import_web7.className)(_el$15, _p$._v$10 = _v$10);
+            _v$11 !== _p$._v$11 && (0, import_web7.className)(_el$16, _p$._v$11 = _v$11);
             return _p$;
           }, {
-            _v$5: void 0,
-            _v$6: void 0,
-            _v$7: void 0
+            _v$8: void 0,
+            _v$9: void 0,
+            _v$10: void 0,
+            _v$11: void 0
           });
-          return _el$7;
+          return _el$13;
         })(), (() => {
-          const _el$11 = _tmpl$4.cloneNode(true), _el$12 = _el$11.firstChild, _el$13 = _el$12.nextSibling, _el$14 = _el$13.firstChild;
-          _el$13.addEventListener("change", (e) => {
+          const _el$18 = _tmpl$4.cloneNode(true), _el$19 = _el$18.firstChild, _el$20 = _el$19.nextSibling, _el$21 = _el$20.nextSibling, _el$22 = _el$21.firstChild;
+          _el$21.addEventListener("change", (e) => {
             store_default.vibrationMode = Object.values(VibrationMode).includes(e.target.value) ? e.target.value : null;
             handler != null && handler.deinit();
             switch (store_default.vibrationMode) {
@@ -10038,70 +10097,121 @@
                 break;
             }
           });
-          (0, import_web4.insert)(_el$13, (0, import_web6.createComponent)(For, {
+          (0, import_web10.insert)(_el$21, (0, import_web11.createComponent)(For, {
             get each() {
               return Object.entries(VibrationMode);
             },
             children: ([name, mode]) => (() => {
-              const _el$18 = _tmpl$2.cloneNode(true);
-              _el$18.value = mode;
-              (0, import_web4.insert)(_el$18, name);
-              (0, import_web3.effect)(() => _el$18.selected = store_default.vibrationMode === mode);
-              return _el$18;
+              const _el$26 = _tmpl$22.cloneNode(true);
+              _el$26.value = mode;
+              (0, import_web10.insert)(_el$26, name);
+              (0, import_web8.effect)(() => _el$26.selected = store_default.vibrationMode === mode);
+              return _el$26;
             })()
           }), null);
-          (0, import_web3.effect)((_p$) => {
-            const _v$8 = styles_default["selectRow"], _v$9 = styles_default["selectLabel"], _v$10 = styles_default["select"];
-            _v$8 !== _p$._v$8 && (0, import_web2.className)(_el$11, _p$._v$8 = _v$8);
-            _v$9 !== _p$._v$9 && (0, import_web2.className)(_el$12, _p$._v$9 = _v$9);
-            _v$10 !== _p$._v$10 && (0, import_web2.className)(_el$13, _p$._v$10 = _v$10);
+          (0, import_web8.effect)((_p$) => {
+            const _v$12 = styles_default["selectRow"], _v$13 = `${styles_default["selectLabel"]} ${styles_default["label"]}`, _v$14 = styles_default["selectGap"], _v$15 = styles_default["select"];
+            _v$12 !== _p$._v$12 && (0, import_web7.className)(_el$18, _p$._v$12 = _v$12);
+            _v$13 !== _p$._v$13 && (0, import_web7.className)(_el$19, _p$._v$13 = _v$13);
+            _v$14 !== _p$._v$14 && (0, import_web7.className)(_el$20, _p$._v$14 = _v$14);
+            _v$15 !== _p$._v$15 && (0, import_web7.className)(_el$21, _p$._v$15 = _v$15);
             return _p$;
           }, {
-            _v$8: void 0,
-            _v$9: void 0,
-            _v$10: void 0
+            _v$12: void 0,
+            _v$13: void 0,
+            _v$14: void 0,
+            _v$15: void 0
           });
-          return _el$11;
-        })(), (0, import_web5.memo)((() => {
-          const _c$5 = (0, import_web5.memo)(() => store_default.vibrationMode === VibrationMode.Binary);
+          return _el$18;
+        })(), (0, import_web9.memo)((() => {
+          const _c$5 = (0, import_web9.memo)(() => store_default.vibrationMode === VibrationMode.Binary);
           return () => _c$5() && (() => {
-            const _el$19 = _tmpl$8.cloneNode(true), _el$20 = _el$19.firstChild;
-            (0, import_web4.insert)(_el$19, (0, import_web6.createComponent)(Slider, {
+            const _el$27 = _tmpl$8.cloneNode(true), _el$28 = _el$27.firstChild;
+            (0, import_web10.insert)(_el$27, (0, import_web11.createComponent)(Slider_default, {
               get value() {
-                return store_default.intensity;
+                return store_default.signalIntensity;
               },
-              onInput: (e) => store_default.intensity = +e,
+              onInput: (e) => store_default.signalIntensity = +e,
               min: 0,
               max: 1,
-              get ["class"]() {
-                return styles_default["select"];
-              }
+              step: 0.01,
+              valueFormatter: (x) => x.toFixed(2)
             }), null);
-            (0, import_web3.effect)((_p$) => {
-              const _v$11 = styles_default["selectRow"], _v$12 = styles_default["selectLabel"];
-              _v$11 !== _p$._v$11 && (0, import_web2.className)(_el$19, _p$._v$11 = _v$11);
-              _v$12 !== _p$._v$12 && (0, import_web2.className)(_el$20, _p$._v$12 = _v$12);
-              return _p$;
-            }, {
-              _v$11: void 0,
-              _v$12: void 0
-            });
-            return _el$19;
+            (0, import_web8.effect)(() => (0, import_web7.className)(_el$28, styles_default["label"]));
+            return _el$27;
+          })();
+        })()), (0, import_web9.memo)((() => {
+          const _c$6 = (0, import_web9.memo)(() => store_default.vibrationMode === VibrationMode.Eased);
+          return () => _c$6() && (() => {
+            const _el$29 = _tmpl$9.cloneNode(true), _el$30 = _el$29.firstChild, _el$31 = _el$30.nextSibling;
+            (0, import_web10.insert)(_el$29, (0, import_web11.createComponent)(Slider_default, {
+              get value() {
+                return store_default.impulseIntensity;
+              },
+              onInput: (e) => store_default.impulseIntensity = +e,
+              min: 0,
+              max: 1,
+              step: 1e-3,
+              valueFormatter: (x) => x.toFixed(3)
+            }), _el$31);
+            (0, import_web8.effect)(() => (0, import_web7.className)(_el$30, styles_default["label"]));
+            return _el$29;
+          })();
+        })()), (0, import_web9.memo)((() => {
+          const _c$7 = (0, import_web9.memo)(() => store_default.vibrationMode === VibrationMode.Eased);
+          return () => _c$7() && (() => {
+            const _el$32 = _tmpl$10.cloneNode(true), _el$33 = _el$32.firstChild, _el$34 = _el$33.nextSibling;
+            (0, import_web10.insert)(_el$32, (0, import_web11.createComponent)(Slider_default, {
+              get value() {
+                return store_default.impulseDuration;
+              },
+              onInput: (e) => store_default.impulseDuration = +e,
+              min: 0,
+              max: 6e4,
+              step: 250,
+              valueFormatter: (x) => `${x.toFixed(0)}ms`
+            }), _el$34);
+            (0, import_web8.effect)(() => (0, import_web7.className)(_el$33, styles_default["label"]));
+            return _el$32;
+          })();
+        })()), (0, import_web9.memo)((() => {
+          const _c$8 = (0, import_web9.memo)(() => store_default.vibrationMode === VibrationMode.Eased);
+          return () => _c$8() && (() => {
+            const _el$35 = _tmpl$11.cloneNode(true), _el$36 = _el$35.firstChild, _el$37 = _el$36.nextSibling, _el$38 = _el$37.firstChild, _el$39 = _el$38.nextSibling, _el$40 = _el$39.nextSibling;
+            (0, import_web10.insert)(_el$35, (0, import_web11.createComponent)(Slider_default, {
+              get value() {
+                return store_default.signalCutoff;
+              },
+              onInput: (e) => store_default.signalCutoff = +e,
+              min: 0,
+              max: 1,
+              step: 1e-3,
+              valueFormatter: (x) => x.toFixed(3)
+            }), _el$37);
+            _el$40.style.setProperty("font-size", "0.75rem");
+            (0, import_web8.effect)(() => (0, import_web7.className)(_el$36, styles_default["label"]));
+            return _el$35;
           })();
         })())];
       })(), null);
-      (0, import_web3.effect)((_p$) => {
-        const _v$ = styles_default["settingsBox"], _v$2 = styles_default["selectRow"], _v$3 = styles_default["selectLabel"], _v$4 = styles_default["select"];
-        _v$ !== _p$._v$ && (0, import_web2.className)(_el$, _p$._v$ = _v$);
-        _v$2 !== _p$._v$2 && (0, import_web2.className)(_el$2, _p$._v$2 = _v$2);
-        _v$3 !== _p$._v$3 && (0, import_web2.className)(_el$3, _p$._v$3 = _v$3);
-        _v$4 !== _p$._v$4 && (0, import_web2.className)(_el$4, _p$._v$4 = _v$4);
+      (0, import_web8.effect)((_p$) => {
+        const _v$ = styles_default["settingsBox"], _v$2 = `${styles_default["label"]} ${styles_default["title"]}`, _v$3 = `${styles_default["label"]} ${styles_default["title"]}`, _v$4 = styles_default["selectRow"], _v$5 = `${styles_default["selectLabel"]}} ${styles_default["label"]}`, _v$6 = styles_default["selectGap"], _v$7 = styles_default["select"];
+        _v$ !== _p$._v$ && (0, import_web7.className)(_el$, _p$._v$ = _v$);
+        _v$2 !== _p$._v$2 && (0, import_web7.className)(_el$3, _p$._v$2 = _v$2);
+        _v$3 !== _p$._v$3 && (0, import_web7.className)(_el$5, _p$._v$3 = _v$3);
+        _v$4 !== _p$._v$4 && (0, import_web7.className)(_el$7, _p$._v$4 = _v$4);
+        _v$5 !== _p$._v$5 && (0, import_web7.className)(_el$8, _p$._v$5 = _v$5);
+        _v$6 !== _p$._v$6 && (0, import_web7.className)(_el$9, _p$._v$6 = _v$6);
+        _v$7 !== _p$._v$7 && (0, import_web7.className)(_el$10, _p$._v$7 = _v$7);
         return _p$;
       }, {
         _v$: void 0,
         _v$2: void 0,
         _v$3: void 0,
-        _v$4: void 0
+        _v$4: void 0,
+        _v$5: void 0,
+        _v$6: void 0,
+        _v$7: void 0
       });
       return _el$;
     })();
