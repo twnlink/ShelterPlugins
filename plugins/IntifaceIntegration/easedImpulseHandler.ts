@@ -6,8 +6,6 @@ const {
   flux: { intercept },
 } = shelter;
 
-const INTENSITY = 0.3;
-const SIGNAL_WINDOW = 5000;
 const FREQUENCE = 50;
 
 let impulses: number[] = [];
@@ -38,14 +36,19 @@ const iteration = () => {
 
   for (const imp of impulses) {
     const elapsed = now - imp;
-    if (elapsed < SIGNAL_WINDOW) {
-      const beat = INTENSITY * easingFn(elapsed / SIGNAL_WINDOW);
+    if (elapsed < store.impulseDuration) {
+      const beat =
+        store.impulseIntensity * easingFn(elapsed / store.impulseDuration);
       signal += beat;
     }
   }
 
   if (signal === 0) {
     impulses = [];
+  }
+
+  if (signal < store.signalCutoff) {
+    signal = 0;
   }
 
   triggerSelectedOutput(signal);

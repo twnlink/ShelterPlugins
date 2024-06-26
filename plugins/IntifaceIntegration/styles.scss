@@ -1,3 +1,17 @@
+.label {
+  color: var(--header-secondary);
+  font-family: var(--font-display);
+  font-size: 12px;
+  line-height: 1.3333333333333333;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.title {
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
 .settingsBox {
   display: flex;
   flex-direction: column;
@@ -36,6 +50,15 @@
   width: 30ch;
 }
 
+.sliderBox {
+  display: flex;
+  align-items: center;
+}
+.sliderValue {
+  width: 9ch;
+}
 .slider {
-  margin-bottom: unset;
+  margin-top: -12px;
+  margin-bottom: calc(-1rem - 12px);
+  flex-grow: 1;
 }

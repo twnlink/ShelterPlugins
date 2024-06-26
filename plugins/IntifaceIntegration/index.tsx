@@ -15,10 +15,11 @@ import {
 import SoundboardPayload from "./SoundboardPayload";
 import Handler from "./Handler";
 import easedImpulseHandler from "./easedImpulseHandler";
+import Slider from "./Slider";
 
 const {
   solid: { createSignal, For },
-  ui: { TextBox, Button, ButtonSizes, Slider, ButtonColors },
+  ui: { TextBox, Button, ButtonSizes, ButtonColors },
   flux: { intercept },
 } = shelter;
 
@@ -26,7 +27,11 @@ store.serverURL ??= "ws://localhost:12345";
 store.soundId ??= "1144838692540792935";
 store.outputMode ??= "vibrate";
 store.vibrationMode ??= "binary";
-store.intensity ??= 1.0;
+store.signalIntensity ??= 1.0;
+
+store.impulseIntensity ??= 0.3;
+store.impulseDuration ??= 5500;
+store.signalCutoff ??= 0.06;
 
 let connector = new Buttplug.ButtplugBrowserWebsocketClientConnector(
   store.serverURL,
@@ -78,13 +83,24 @@ export const settings = () => {
   return (
     <>
       <div class={styles["settingsBox"]}>
-        <TextBox value={store.serverURL} onInput={debouncedNewConnector} />
+        <div>
+          <label
+            for="serverUrl"
+            class={`${styles["label"]} ${styles["title"]}`}
+          >
+            Server URL
+          </label>
+          <TextBox
+            value={store.serverURL}
+            onInput={debouncedNewConnector}
+            id="serverUrl"
+          />
+        </div>
 
         <div>
-          <p>
-            Select the most recently played sound. Anyone with access to the
-            specific sound will be able to trigger it.
-          </p>
+          <label class={`${styles["label"]} ${styles["title"]}`}>
+            Soundeffect
+          </label>
           <Button
             size={ButtonSizes.LARGE}
             onClick={() => {
@@ -98,10 +114,22 @@ export const settings = () => {
           >
             {recentlyPressed() ? "✓" : "Select soundclip"}
           </Button>
+          <p
+            style={{
+              "margin-top": ".5rem",
+              "margin-bottom": "0",
+            }}
+          >
+            Select the most recently played sound. Anyone with access to the
+            specific sound will be able to trigger it.
+          </p>
         </div>
 
         <div class={styles["selectRow"]}>
-          <label for="device" class={styles["selectLabel"]}>
+          <label
+            for="device"
+            class={`${styles["selectLabel"]}} ${styles["label"]}`}
+          >
             Buttplug device
           </label>
           <div class={styles["selectGap"]} />
@@ -131,10 +159,13 @@ export const settings = () => {
           </select>
         </div>
 
-        {selectedDevice() !== undefined && (
+        {selectedDevice() != null && (
           <>
             <div class={styles["selectRow"]}>
-              <label for="output" class={styles["selectLabel"]}>
+              <label
+                for="output"
+                class={`${styles["selectLabel"]} ${styles["label"]}`}
+              >
                 Output
               </label>
               <div class={styles["selectGap"]} />
@@ -177,9 +208,11 @@ export const settings = () => {
                 )}
               </select>
             </div>
-
             <div class={styles["selectRow"]}>
-              <label for="mode" class={styles["selectLabel"]}>
+              <label
+                for="mode"
+                class={`${styles["selectLabel"]} ${styles["label"]}`}
+              >
                 Mode
               </label>
               <div class={styles["selectGap"]} />
@@ -220,16 +253,85 @@ export const settings = () => {
                 </For>
               </select>
             </div>
-
             {store.vibrationMode === VibrationMode.Binary && (
               <div>
-                <label for="mode">Intensity</label>
+                <label /*for="intensity"*/ class={styles["label"]}>
+                  Intensity
+                </label>
                 <Slider
-                  value={store.intensity}
-                  onInput={(e) => (store.intensity = +e)}
+                  value={store.signalIntensity}
+                  onInput={(e) => (store.signalIntensity = +e)}
                   min={0.0}
                   max={1.0}
+                  step={0.01}
+                  valueFormatter={(x) => x.toFixed(2)}
                 />
+              </div>
+            )}
+            {store.vibrationMode === VibrationMode.Eased && (
+              <div>
+                <label /*for="impulse-intensity"*/ class={styles["label"]}>
+                  Impulse Intensity
+                </label>
+                <Slider
+                  value={store.impulseIntensity}
+                  onInput={(e) => (store.impulseIntensity = +e)}
+                  min={0.0}
+                  max={1.0}
+                  step={0.001}
+                  valueFormatter={(x) => x.toFixed(3)}
+                />
+                <p>
+                  The strength of each impulse. The output signal strength is
+                  the sum of all impulses. There is a maximum signal strength,
+                  if the sum is above, it will be limited to the maximum.
+                </p>
+              </div>
+            )}
+            {store.vibrationMode === VibrationMode.Eased && (
+              <div>
+                <label for="mode" class={styles["label"]}>
+                  Impulse window
+                </label>
+                <Slider
+                  value={store.impulseDuration}
+                  onInput={(e) => (store.impulseDuration = +e)}
+                  min={0.0}
+                  max={60000}
+                  step={250}
+                  valueFormatter={(x) => `${x.toFixed(0)}ms`}
+                />
+                <p>
+                  How long each impulse have effect. Any impulse older than the
+                  window is culled.
+                </p>
+              </div>
+            )}
+            {store.vibrationMode === VibrationMode.Eased && (
+              <div>
+                <label for="mode" class={styles["label"]}>
+                  Signal cutoff
+                </label>
+                <Slider
+                  value={store.signalCutoff}
+                  onInput={(e) => (store.signalCutoff = +e)}
+                  min={0.0}
+                  max={1.0}
+                  step={0.001}
+                  valueFormatter={(x) => x.toFixed(3)}
+                />
+                <p>
+                  Any signal below this level will be cut off.
+                  <br />
+                  <small
+                    style={{
+                      "font-size": "0.75rem",
+                    }}
+                  >
+                    Very weak signals above zero round up to minimum vibration.
+                    This prevents long drawn-out weak vibrations.
+                  </small>
+                </p>
               </div>
             )}
           </>

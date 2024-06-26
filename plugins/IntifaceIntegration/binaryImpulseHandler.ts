@@ -34,13 +34,13 @@ const binaryImpulseHandler: Parameters<typeof intercept>[0] = ({
 
         switch (store.outputMode) {
           case VibrationOutput.Vibrate:
-            void selectedDevice()?.vibrate(store.intensity);
+            void selectedDevice()?.vibrate(store.signalIntensity);
             break;
           case VibrationOutput.Oscillate:
-            void selectedDevice()?.oscillate(store.intensity);
+            void selectedDevice()?.oscillate(store.signalIntensity);
             break;
           case VibrationOutput.Linear:
-            void selectedDevice()?.linear(store.intensity);
+            void selectedDevice()?.linear(store.signalIntensity);
             break;
         }
 

@@ -19,17 +19,16 @@ export type VibrationMode = (typeof VibrationMode)[keyof typeof VibrationMode];
 type PluginStore = {
   serverURL: string;
   soundId: string;
-  intensity: number;
   outputMode: VibrationOutput;
-} & (
-  | {
-      vibrationMode: typeof VibrationMode.Binary;
-      intensity: number;
-    }
-  | {
-      vibrationMode: typeof VibrationMode.Eased;
-    }
-);
+  vibrationMode: VibrationMode;
+  // binary
+  signalIntensity: number;
+  // eased
+  impulseIntensity: number;
+  impulseDuration: number;
+  signalCutoff: number;
+};
+
 type PluginState = {
   lastSoundId: string | null;
 };
