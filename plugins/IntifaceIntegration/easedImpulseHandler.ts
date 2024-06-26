@@ -47,6 +47,10 @@ const iteration = () => {
     impulses = [];
   }
 
+  if (signal > 1) {
+    signal = 1;
+  }
+
   if (signal < store.signalCutoff) {
     signal = 0;
   }
