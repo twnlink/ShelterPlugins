@@ -10138,7 +10138,7 @@
               min: 0,
               max: 1,
               step: 0.01,
-              valueFormatter: (x) => x.toFixed(2)
+              valueFormatter: (x) => `${(x * 100).toFixed(0)}%`
             }), null);
             (0, import_web8.effect)(() => (0, import_web7.className)(_el$28, styles_default["label"]));
             return _el$27;
@@ -10155,7 +10155,7 @@
               min: 0,
               max: 1,
               step: 1e-3,
-              valueFormatter: (x) => x.toFixed(3)
+              valueFormatter: (x) => `${(x * 100).toFixed(1)}%`
             }), _el$31);
             (0, import_web8.effect)(() => (0, import_web7.className)(_el$30, styles_default["label"]));
             return _el$29;
@@ -10189,7 +10189,7 @@
               min: 0,
               max: 1,
               step: 1e-3,
-              valueFormatter: (x) => x.toFixed(3)
+              valueFormatter: (x) => `${(x * 100).toFixed(1)}%`
             }), _el$37);
             _el$40.style.setProperty("font-size", "0.75rem");
             (0, import_web8.effect)(() => (0, import_web7.className)(_el$36, styles_default["label"]));
