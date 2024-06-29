@@ -264,7 +264,7 @@ export const settings = () => {
                   min={0.0}
                   max={1.0}
                   step={0.01}
-                  valueFormatter={(x) => x.toFixed(2)}
+                  valueFormatter={(x) => `${(x * 100).toFixed(0)}%`}
                 />
               </div>
             )}
@@ -279,7 +279,7 @@ export const settings = () => {
                   min={0.0}
                   max={1.0}
                   step={0.001}
-                  valueFormatter={(x) => x.toFixed(3)}
+                  valueFormatter={(x) => `${(x * 100).toFixed(1)}%`}
                 />
                 <p>
                   The strength of each impulse. The output signal strength is
@@ -318,7 +318,7 @@ export const settings = () => {
                   min={0.0}
                   max={1.0}
                   step={0.001}
-                  valueFormatter={(x) => x.toFixed(3)}
+                  valueFormatter={(x) => `${(x * 100).toFixed(1)}%`}
                 />
                 <p>
                   Any signal below this level will be cut off.
