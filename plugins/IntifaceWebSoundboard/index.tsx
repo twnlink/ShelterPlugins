@@ -5,14 +5,7 @@ import styles from "./styles.scss";
 
 import { ClientMessage, ServerMessage } from "./message";
 import { clsx } from "clsx";
-import {
-  JSX,
-  createSignal,
-  createEffect,
-  splitProps,
-  For,
-  untrack,
-} from "solid-js";
+import { JSX, createSignal, createEffect, splitProps, For } from "solid-js";
 import Slider from "./Slider";
 type EventHandler<T, J extends Event> = JSX.EventHandler<T, J>;
 
@@ -39,10 +32,12 @@ const store = uglyStore as {
   backendUrl: string;
   backendPassword: string;
   settings: Settings;
+  name: string;
 };
 store.backendUrl ??= "ws://localhost:6969";
 store.backendPassword ??= "12345";
 store.settings ??= {};
+store.name ??= "";
 
 const [backendUrl, setBackendUrl] = createSignal<string>(store.backendUrl);
 const updateBackendUrl = (url: string) => {
@@ -60,6 +55,11 @@ const [settings_, setSettings] = createSignal<Settings>(store.settings);
 const updateSettings = (settings: Settings) => {
   setSettings(settings);
   store.settings = settings;
+};
+const [username, setUsername] = createSignal<string>(store.name);
+const updateUsername = (username: string) => {
+  setUsername(username);
+  store.name = username;
 };
 
 const [websocket, setWebsocket] = createSignal<WebSocket | null>(null);
@@ -134,13 +134,13 @@ createEffect(() => {
   ({ type, soundId, userId }: SoundboardPayload) => {
     switch (type) {
       case "GUILD_SOUNDBOARD_SOUND_PLAY_START":
-        untrack(() => {
-          if (settings_()[soundId]?.enabled) {
-            sendMessage(websocket(), {
-              type: "signal",
-            });
-          }
-        });
+        if (settings_()[soundId]?.enabled) {
+          sendMessage(websocket(), {
+            type: "signal",
+            intensity: settings_()[soundId].intensity,
+            from: username().length > 0 ? username() : undefined,
+          });
+        }
 
         break;
     }
@@ -246,7 +246,7 @@ export const settings = () => (
           />
           <RefreshButton
             class={styles["refreshButton"]}
-            onClick={() => updateBackendUrl(`${backendUrl}`)}
+            onClick={() => updateBackendUrl(`${backendUrl()}`)}
           />
           <div>
             {websocketStatus() === "not-connected" && "❌"}
@@ -266,11 +266,32 @@ export const settings = () => (
         />
       </div>
 
+      <div>
+        <label for="name" class={`${styles["label"]} ${styles["title"]}`}>
+          Name
+        </label>
+        <TextBox
+          value={store.name}
+          onInput={(v) => updateUsername(v)}
+          id="name"
+        />
+        <p style="margin-top: .5rem">
+          Optional. Using the same name on multiple devices will prevent you
+          from sending signals to yourself.
+        </p>
+      </div>
+
       <div class={styles["soundboardList"]}>
         <For
           each={Array.from(SoundboardStore.getFavorites()).map((favorite) =>
             SoundboardStore.getSoundById(favorite),
           )}
+          fallback={
+            <p>
+              Either you have no favorites, or the soundboard is not loaded yet
+              (open the soundboard once to refresh).
+            </p>
+          }
         >
           {(soundbite) =>
             soundbite && (
@@ -294,7 +315,7 @@ export const settings = () => (
                     type="checkbox"
                     checked={settings_()[soundbite.soundId]?.enabled}
                     onChange={(x) => {
-                      setSettings({
+                      updateSettings({
                         ...settings_(),
                         [soundbite.soundId]: {
                           ...(settings_()[soundbite.soundId] ?? {
@@ -310,7 +331,7 @@ export const settings = () => (
                     <Slider
                       value={settings_()[soundbite.soundId].intensity}
                       onInput={(i) => {
-                        setSettings({
+                        updateSettings({
                           ...settings_(),
                           [soundbite.soundId]: {
                             ...(settings_()[soundbite.soundId] ?? {
