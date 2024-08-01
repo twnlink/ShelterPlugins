@@ -1,5 +1,7 @@
 type Signal = {
   type: "signal";
+  intensity?: number;
+  from?: string;
 };
 
 export type ClientMessage =
@@ -9,9 +11,6 @@ export type ClientMessage =
     }
   | {
       type: "disconnect";
-    }
-  | {
-      type: "signal";
     }
   | Signal;
 
